@@ -10,11 +10,6 @@ setup(
     install_requires=["GitPython", 'svn;platform_system=="Windows"',
                       'python-apt;platform_system=="Linux"'],
     url="https://github.com/TylerGubala/bpy-build",
-    project_urls={
-        "Bug Tracker": "https://github.com/TylerGubala/bpy-build/issues",
-        "Documentation": "https://github.com/TylerGubala/bpy-build/wiki",
-        "Source Code": "https://github.com/TylerGubala/bpy-build"
-    },
     keywords="blender 3d stub autocomplete",
     license="GPL-3.0"
 )

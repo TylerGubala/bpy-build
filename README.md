@@ -10,4 +10,4 @@ This will install the python build scripts for blender as a python module.
 
 ## Requirements
 
-Users using this module must have git, 
+Users using this module must have git and GitPython, svn and the python svn package (windows) as well as platform specific build tools

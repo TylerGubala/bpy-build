@@ -1,0 +1,20 @@
+from setuptools import setup, find_packages
+
+setup(
+    name="bpybuild",
+    version="0.1",
+    packages=find_packages(),
+    author="Tyler Gubala",
+    author_email="gubalatyler@gmail.com",
+    description="A package that builds blender",
+    install_requires=["GitPython", 'svn;platform_system=="Windows"',
+                      'python-apt;platform_system=="Linux"'],
+    url="https://github.com/TylerGubala/bpy-build",
+    project_urls={
+        "Bug Tracker": "https://github.com/TylerGubala/bpy-build/issues",
+        "Documentation": "https://github.com/TylerGubala/bpy-build/wiki",
+        "Source Code": "https://github.com/TylerGubala/bpy-build"
+    },
+    keywords="blender 3d stub autocomplete",
+    license="GPL-3.0"
+)

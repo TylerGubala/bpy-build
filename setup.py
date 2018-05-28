@@ -7,7 +7,7 @@ setup(
     author="Tyler Gubala",
     author_email="gubalatyler@gmail.com",
     description="A package that builds blender",
-    install_requires=["GitPython", 'svn;platform_system=="Windows"',
+    install_requires=["GitPython", 'cmake', 'svn;platform_system=="Windows"',
                       'python-apt;platform_system=="Linux"'],
     url="https://github.com/TylerGubala/bpy-build",
     keywords="blender 3d stub autocomplete",

@@ -16,7 +16,7 @@ from git import Repo
 
 PYTHON_EXE_DIR = os.path.dirname(sys.executable)
 
-BPY_PACKAGE_DIR = os.path.join(site.getsitepackages()[1], 'bpy')
+BPY_PACKAGE_DIR = site.getsitepackages()[1]
 
 BLENDER_GIT_REPO_URL = 'git://git.blender.org/blender.git'
 

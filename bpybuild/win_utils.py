@@ -600,29 +600,10 @@ def install_blender_python(root_dir: str):
     dlls_to_copy = [os.path.join(bin_dir, dll) for dll in 
                     os.listdir(bin_dir) if 
                     os.path.isfile(os.path.join(bin_dir, dll)) and 
-                    os.path.splitext(dll)[1] == ".dll"]
+                    os.path.splitext(dll)[1] == ".dll" and not
+                    dll.startswith("python")]
 
-    print(f"Making a package for bpy at: {BPY_PACKAGE_DIR}")
-
-    try:
-        
-        os.makedirs(BPY_PACKAGE_DIR)
-
-    except FileExistsError:
-
-        print("Bpy directory already exists, skipping...")
-
-    else:
-
-        print(f"Created folder {BPY_PACKAGE_DIR}")
-
-    print("Writing __init__.py...")
-
-    with open(os.path.join(BPY_PACKAGE_DIR, "__init__.py"), "w") as bpy_init:
-
-        bpy_init.write("from .bpy import *")
-
-    print("Bpy module init written\nCopying files...")
+    print("Copying files...")
 
     shutil.copy(bpy_to_copy, BPY_PACKAGE_DIR)
 

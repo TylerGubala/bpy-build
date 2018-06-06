@@ -403,8 +403,15 @@ def get_all_vc_dev_tools() -> Dict[float, Set[str]]:
 
 ALL_VC_DEV_TOOLS = get_all_vc_dev_tools()
 
-VS_LIBS = (f"lib/win{PLATFORM}_vc12" if 
-           VS_VERSION == 2013 else f"lib/win{PLATFORM}_vc14")
+# 32bit windows uses the windows path
+def compute_svn_path():
+    if PLATFORM == 32:
+        return "windows"
+    else:
+        return "win64"
+
+VS_LIBS = (f"lib/{compute_svn_path()}_vc12" if 
+           VS_VERSION == 2013 else f"lib/{compute_svn_path()}_vc14")
 
 BLENDER_SVN_REPO_URL = (f"https://svn.blender.org/svnroot/bf-blender/trunk/"
                         f"{VS_LIBS}")

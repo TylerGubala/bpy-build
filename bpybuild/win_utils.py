@@ -403,8 +403,15 @@ def get_all_vc_dev_tools() -> Dict[float, Set[str]]:
 
 ALL_VC_DEV_TOOLS = get_all_vc_dev_tools()
 
-VS_LIBS = (f"lib/win{PLATFORM}_vc12" if 
-           VS_VERSION == 2013 else f"lib/win{PLATFORM}_vc14")
+# 32bit windows uses the windows path
+def compute_svn_path():
+    if PLATFORM == 32:
+        return "windows"
+    else:
+        return "win64"
+
+VS_LIBS = (f"lib/{compute_svn_path()}_vc12" if 
+           VS_VERSION == 2013 else f"lib/{compute_svn_path()}_vc14")
 
 BLENDER_SVN_REPO_URL = (f"https://svn.blender.org/svnroot/bf-blender/trunk/"
                         f"{VS_LIBS}")
@@ -428,25 +435,19 @@ def get_blender_sources(root_dir: str):
     lib_dir = os.path.join(root_dir, 'lib', 'windows_vc12' if 
                            VS_VERSION == 2013 else 'windows_vc14')
 
-    blender_svn_repo = svn.remote.RemoteClient(BLENDER_SVN_REPO_URL)
+    if not os.path.isdir(lib_dir):
+        os.makedirs(lib_dir)
 
+    blender_svn_repo = svn.remote.RemoteClient(BLENDER_SVN_REPO_URL)
     blender_svn_repo.checkout(lib_dir)
 
     print(f"Svn code modules checked out successfully into {lib_dir}")
 
-    # print(f"Copying svn libs to the other directory blender wants...")
-
-    vc_ver = str(int(max(ALL_VC_DEV_TOOLS))) # I would rather find the version and use it below
-
-    lib_dir2 = os.path.join(root_dir, "lib", f"win{PLATFORM}_vc14")
-
-    if not os.path.isdir(lib_dir2):
-
-        os.makedirs(lib_dir2)
-
-    # common_utils.recursive_copy(lib_dir, lib_dir2) instead of copy, let's just checkout
-
-    blender_svn_repo.checkout(lib_dir2)
+def choose_generator(version: int):
+    if PLATFORM == 32:
+        return f"Visual Studio {version} 2017"
+    else:
+        return f"Visual Studio {version} 2017 Win64"
 
 def configure_blender_as_python_module(root_dir: str, version: int):
     """
@@ -470,8 +471,7 @@ def configure_blender_as_python_module(root_dir: str, version: int):
         # TODO: replace static calls with something we know is best...
         subprocess.call(['cmake', '-H'+blender_dir, '-B'+build_dir,
                         '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
-                        '-DWITH_PYTHON_MODULE=ON', f"-GVisual Studio {version} 2017 "
-                        f"Win{PLATFORM}"])
+                        '-DWITH_PYTHON_MODULE=ON', f"-G{choose_generator(version)}"])
 
     except Exception as e:
 
@@ -526,23 +526,22 @@ def make_blender_python(root_dir: str) -> str:
         # subprocess.call([os.path.join(root_dir, 'blender/make.bat'), 'bpy', 
         #                  str(VS_VERSION)])
 
-        subprocess.call(['C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat', '&&',
+        # print(best_dev_tool)
+        # subprocess.call(['C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat', '&&',
+        #                  'msbuild', blender_solution, '/target:build',
+        #                  '/property:Configuration=Release',
+        #                  f"/p:platform={PLATFORM}",
+        #                  '/flp:Summary;Verbosity=minimal;LogFile=%BUILD_DIR%\Build.log',
+        #                  '&&','msbuild', install_solution,
+        #                  '/property:Configuration=Release',
+        #                  f"/p:platform={PLATFORM}"])
+
+        subprocess.call([best_dev_tool, '&&',
                          'msbuild', blender_solution, '/target:build',
                          '/property:Configuration=Release',
-                         f"/p:platform={platform}",
                          '/flp:Summary;Verbosity=minimal;LogFile=%BUILD_DIR%\Build.log',
                          '&&','msbuild', install_solution,
-                         '/property:Configuration=Release',
-                         f"/p:platform={platform}"])
-
-        #subprocess.call([best_dev_tool, '&&',
-        #                 'msbuild', blender_solution, '/target:build',
-        #                 '/property:Configuration=Release',
-        #                 f"/p:platform={platform}",
-        #                 '/flp:Summary;Verbosity=minimal;LogFile=%BUILD_DIR%\Build.log',
-        #                 '&&','msbuild', install_solution,
-        #                 '/property:Configuration=Release',
-        #                 f"/p:platform={platform}"])
+                         '/property:Configuration=Release'])
 
         # subprocess.call(['msbuild', blender_solution, '/target:build',
         #                  '/property:Configuration=Release',

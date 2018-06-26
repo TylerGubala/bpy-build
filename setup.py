@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="bpybuild",
-    version="1.0.1",
+    version="1.0.1a0",
     packages=find_packages(),
     author="Tyler Gubala",
     author_email="gubalatyler@gmail.com",

@@ -12,7 +12,7 @@ import subprocess
 from .common_utils import get_blender_git_sources as get_blender_sources
 from .linux_utils import make_blender_python, find_blender_python
 
-def install_blender_python(root_dir: str):
+def install_blender_python(root_dir: str, dest_dir: str):
     """
     Copy 2.79 into site-packages, copy bpy.so into the site packages
 
@@ -25,6 +25,6 @@ def install_blender_python(root_dir: str):
     bpy_path = os.path.join(root_dir, 'bin/bpy.so')
     ver_dir = os.path.join(root_dir, 'bin/2.79')
 
-    subprocess.call(['cp', bpy_path, site.getsitepackages()])
+    subprocess.call(['cp', bpy_path, dest_dir])
 
-    subprocess.call(['cp', '-R', ver_dir, site.getsitepackages()])
+    subprocess.call(['cp', '-R', ver_dir, dest_dir])

@@ -138,7 +138,7 @@ def make_blender_python(root_dir: str):
 
     subprocess.call([make_script, 'bpy'])
 
-def install_blender_python(root_dir: str):
+def install_blender_python(root_dir: str, dest_dir: str):
     """
     Install blender from the make script
     """

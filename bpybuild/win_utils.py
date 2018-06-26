@@ -109,43 +109,12 @@ def choose_generator() -> str:
     return (f"Visual Studio {VS_VERSION['version']} {VS_VERSION['year']}"
             f"{'' if PLATFORM == 32 else ' Win64'}")
 
-def configure_blender_as_python_module(root_dir: str):
-    """
-    using a call to cmake, set the blender project to build as a python module
-
-    We need to call this because make.bpy does not work currently...
-    """
-
-    print("Configuring Blender project as python module...")
-
-    try:
-
-        blender_dir = os.path.join(root_dir, 'blender')
-
-        build_dir = os.path.join(root_dir, 'build')
-
-        print(f"Creating solution in {build_dir}")
-
-        # Most of this is hard-coded for now
-        # TODO: replace static calls with something we know is best...
-        subprocess.call(['cmake', '-H'+blender_dir, '-B'+build_dir,
-                        '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
-                        '-DWITH_PYTHON_MODULE=ON', f"-G{choose_generator()}"])
-
-    except Exception as e:
-
-        print("Something went wrong... check the console output for now")
-
-        raise e
-
-    else:
-
-        print("Blender successfully configured!")
-
-def make_blender_python(root_dir: str):
+def make_blender_python(root_dir: str, dest_dir: str):
     """
     Using the automated build script, make bpy with the correct C++ build utils
     """
+
+    blender_dir = os.path.join(root_dir, 'blender')
 
     install_solution = os.path.join(root_dir, 'build', 'INSTALL.vcxproj')
 
@@ -154,9 +123,11 @@ def make_blender_python(root_dir: str):
 
     print("Making Blender from sources...")
 
-    configure_blender_as_python_module(root_dir)
-
     try:
+
+        subprocess.call(['cmake', '-H'+blender_dir, '-B'+dest_dir,
+                        '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
+                        '-DWITH_PYTHON_MODULE=ON', f"-DCMAKE_GENERATOR_PLATFORM=x{64 if }"])
 
         subprocess.call(["cmake", "--build", ".", "--target build",
                          "--config Release"])
@@ -213,11 +184,11 @@ def install_blender_python(root_dir: str):
 
     print("Copying files...")
 
-    shutil.copy(bpy_to_copy, BPY_PACKAGE_DIR)
+    shutil.copy(bpy_to_copy, dest_dir)
 
     for dll in dlls_to_copy:
 
-        shutil.copy(dll, BPY_PACKAGE_DIR)
+        shutil.copy(dll, dest_dir)
 
     print("Making required dirs")
 

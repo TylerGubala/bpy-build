@@ -158,7 +158,8 @@ def make_blender_python(root_dir: str):
 
     try:
 
-        subprocess.call(['cmake', '-B'])
+        subprocess.call(["cmake", "--build", ".", "--target build",
+                         "--config Release"])
 
     except Exception as e:
 

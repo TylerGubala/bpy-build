@@ -1,7 +1,11 @@
 # bpy-build
 Python build script for Blender as a python module
 
-It needs to be its own repository to satisfy the ```setup_requires``` of blenderpy
+It needs to be its own repository to satisfy the `install_requires` of blenderpy
+
+## Note
+
+While it is possible to install this module standalone, you will probably get better results installing `blenderpy` via `pip install bpy` rather than installing `pip install bpy-build`, as `pip install bpy` will attempt to take care of making sure the `bpy` installation is good.
 
 ## Option 1 - Get prebuilt bdist_wheel from pypi
 
@@ -11,14 +15,14 @@ It needs to be its own repository to satisfy the ```setup_requires``` of blender
 
 ### Installation
 
-`py -m pip install bpy`
+`py -m pip install bpy-build`
 
 ## Option 2 - Build from sources using pypi
 
 ### Prerequisites
 
 1. Windows users must have Visual Studio 2013 or later and C++ build tools installed to build from sources
-2. Windows users must have an SVN command-line provider to build from sources (see https://stackoverflow.com/questions/1625406/using-tortoisesvn-via-the-command-line)
+2. ALL users must have an SVN command-line provider to build from sources (see https://stackoverflow.com/questions/1625406/using-tortoisesvn-via-the-command-line) (this is a requirement as it is how we determine the correct release tag to grab, if any)
 3. All users must `py -m pip install cmake` in their python environment to build from sources (currently adding it as a `setup_requires` does not install it properly); after build it may be uninstalled with `py -m pip uninstall cmake`
 4. Users of Python versions below 3.6 must have `future-fstrings` installed `pip install -U future-fstrings`
 5. Users of Python versions 3.4 and below will probably need to update `setuptools` `pip install -U setuptools`
@@ -26,7 +30,7 @@ It needs to be its own repository to satisfy the ```setup_requires``` of blender
 
 ### Installation
 
-`py -m pip install bpy --no-binary`
+`py -m pip install bpy-build --no-binary`
 
 ### How it works
 

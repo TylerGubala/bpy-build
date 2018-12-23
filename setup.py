@@ -7,14 +7,16 @@ Build blender into a python module
 from distutils.command.install_data import install_data
 import os
 import pathlib
+import re
 from setuptools import find_packages, setup, Extension
 from setuptools.command.build_ext import build_ext
+from setuptools.command.install import install
 from setuptools.command.install_lib import install_lib
 from setuptools.command.install_scripts import install_scripts
 import shutil
 import struct
 import sys
-from typing import List
+from typing import List, Set
 
 # Monkey-patch 3.4 and below
 
@@ -28,10 +30,99 @@ if sys.version_info < (3,5):
 
 PYTHON_EXE_DIR = os.path.dirname(sys.executable)
 
-BLENDER_GIT_REPO_URL = 'git://git.blender.org/blender.git'
 BLENDERPY_DIR = os.path.join(str(pathlib.Path.home()), ".blenderpy")
+BLENDER_DESIRED_VERSION = None
+BLENDER_VERSION_PATTERN = r'v(\d\.\d\d)(a|b|c|\-rc\d*)'
+BLENDER_VERSION_REGEX = re.compile(BLENDER_VERSION_PATTERN)
+BLENDER_VERSION_MASTER = 'master'
 
 BITS = struct.calcsize("P") * 8
+
+class BlenderVersion():
+    """
+    Info about a specific version, where the svn libs are located, etc
+    """
+
+    def __init__(self, version: str):
+        from git import Repo as GitRepo
+        from svn.remote import RemoteClient as SvnRepo
+
+        self.git_repo = None
+        self.svn_repo = None
+
+        if version is BLENDER_VERSION_MASTER:
+
+            self.git_repo = GitRepo(Blender.GIT_BASE_URL)
+            self.svn_repo = SvnRepo(os.path.join(Blender.SVN_BASE_URL, 
+                                                 Blender.SVN_MASTER))
+
+        else:
+
+            self.match = BLENDER_VERSION_REGEX.match(version)
+
+            if self.match:
+
+                matching_git_tags = [tag for tag in GitRepo(Blender.GIT_BASE_URL).tags 
+                                     if tag == self.match.group(0)]
+
+                self.git_repo = matching_git_tags[0] if matching_git_tags else None
+
+                if self.git_repo:
+
+                    pass
+
+                else:
+
+                    raise Exception(f"Blender {version} does not exist in git")
+
+                svn_version_tag = (f"blender-{self.match.group(1)}"
+                                   f"{self.match.group(2) if not self.match.group(2).startswith("-rc")}-release")
+
+                blender_svn_tags = os.path.join(Blender.SVN_BASE_URL,
+                                                Blender.SVN_TAGS)
+
+                matching_svn_tags = [os.path.join(blender_svn_tags, tag) for 
+                                     tag in 
+                                     SvnRepo(os.path.join(Blender.SVN_BASE_URL,
+                                             Blender.SVN_TAGS)).list() if 
+                                     tag == svn_version_tag]
+
+                self.svn_repo = SvnRepo(matching_svn_tags[0]) if matching_svn_tags else None
+
+    def variants(self):
+        """
+        The different 'types' of releases this version supports
+        """
+
+        results = []
+
+        for
+
+        return results
+
+class Blender():
+    """
+    Info about Blender, top level that gets the compatible version for us
+    """
+
+    GIT_BASE_URL = 'git://git.blender.org/blender.git'
+
+    SVN_BASE_URL = 'https://svn.blender.org/svnroot/bf-blender'
+    SVN_MASTER = 'trunk'
+    SVN_TAGS = 'tags'
+
+    def __init__(self):
+        from git import Repo as GitRepo
+
+        self.git_repo = GitRepo(self.GIT_BASE_URL)
+
+    @property
+    def versions(self) -> List(BlenderVersion):
+        """
+        The versions associated with Blender
+        """
+
+        return [BlenderVersion(tag) for tag in self.git_repo.tags] + [BlenderVersion(BLENDER_VERSION_MASTER)]
 
 class CMakeExtension(Extension):
     """
@@ -41,6 +132,25 @@ class CMakeExtension(Extension):
     def __init__(self, name, sources=[]):
 
         super().__init__(name = name, sources = sources)
+
+class BlenderpyInstall(install):
+    """
+    We use this class solely to set the Blender desired version parameter
+    """
+
+    user_options = install.user_options + [
+        ("version", None, "The desired Blender version to be installed "
+                          "(ie: v2.74-rc2)")
+    ]
+
+    def initialize_options(self):
+        super().initialize_options()
+        self.version = None
+
+    def run(self):
+        global BLENDER_DESIRED_VERSION
+        BLENDER_DESIRED_VERSION = self.version
+        super().run()
 
 class InstallCMakeLibsData(install_data):
     """
@@ -188,7 +298,8 @@ class BuildCMakeExt(build_ext):
         # We import the setup_requires modules here because if we import them
         # at the top this script will always fail as they won't be present
 
-        from git import Repo
+        from git import Repo as GitRepo
+        from svn.remote import RemoteClient as SvnRepo
 
         self.announce("Preparing the build environment", level=3)
 
@@ -208,9 +319,13 @@ class BuildCMakeExt(build_ext):
 
         os_build_args = []
 
+        # Have to find the correct release tag to checkout here, as potentially
+        # master may not be the correct one for this Python version. We use svn
+        # to find whether or not master, or a specific tag supports the 
+        # current python version
+
         if sys.platform == "win32": # Windows only steps
-                
-            import svn.remote
+
             import winreg
 
             vs_versions = []
@@ -250,19 +365,19 @@ class BuildCMakeExt(build_ext):
                 os_build_args += ["-G", f"Visual Studio 12 2013"
                                         f"{' Win64' if BITS == 64 else ''}"]
 
-            svn_lib = (f"win{'dows' if BITS == 32 else '64'}"
-                       f"{'_vc12' if max(vs_versions) == 12 else '_vc14'}")
-            svn_url = (f"https://svn.blender.org/svnroot/bf-blender/trunk/lib/"
-                       f"{svn_lib}")
-            svn_dir = os.path.join(BLENDERPY_DIR, "lib", svn_lib)
+            # TODO: Clean up here
+
+            svn_lib_options += [f"win{64 if BITS == 64 else 'dows'}_vc{version}" 
+                                for version in vs_versions]
+
+            blender_svn_repo = SvnRepo(svn_url)
 
             os.makedirs(svn_dir, exist_ok=True)
 
             self.announce(f"Checking out svn libs from {svn_url}", level=3)
 
             try:
-
-                blender_svn_repo = svn.remote.RemoteClient(svn_url)
+                
                 blender_svn_repo.checkout(svn_dir)
 
             except Exception as e:
@@ -289,17 +404,91 @@ class BuildCMakeExt(build_ext):
 
         # Perform relatively common build steps
 
+        # TODO: if blender desired version, then see if we can install that
+        # Otherwise fail, if no desired version, find the latest version that
+        # supports our python and install that
+
+        git_repo = GitRepo(GIT_BASE_URL)
+        svn_repo = SvnRepo(SVN_BASE_URL)
+
+        if BLENDER_DESIRED_VERSION:
+
+            match = BLENDER_VERSION_REGEX.match(BLENDER_DESIRED_VERSION)
+
+            if match:
+
+                # We have a blender version that conforms to the naming scheme
+                # now to see if it actually exists in git and svn
+
+                if match.group(0) in git_repo.tags:
+
+                    # The version was tagged in the git repository
+                    # now, format the version to match the svn versioning 
+                    # scheme...
+
+                    svn_version_tag = (f"blender-{match.group(1)}"
+                                       f"{match.group(2) if not match.group(2).startswith("-rc")}-release")
+
+                    svn_tag_repo = SvnRepo(os.path.join(SVN_BASE_URL, SVN_TAGS))
+
+                    if svn_version_tag in svn_tag_repo.list():
+
+                        # The version was released in svn and we found it
+                        # Now, is it compatible with our OS and python version?
+
+                    else:
+
+                        raise Exception(f"{BLENDER_DESIRED_VERSION} was found "
+                                        f"in the git repository but not the "
+                                        f"svn repository.")
+
+                else:
+
+                    raise Exception(f"The provided version "
+                                    f"{BLENDER_DESIRED_VERSION} does not "
+                                    f"exist; please check "
+                                    f"https://git.blender.org/gitweb/"
+                                    f"gitweb.cgi/blender.git/tags for a list "
+                                    f"of valid Blender releases")
+
+            else:
+
+                # The blender version did not conform to the naming scheme
+                # fail and notify the user how to list the version
+
+                raise Exception(f"The provided version "
+                                f"{BLENDER_DESIRED_VERSION} did not match "
+                                f"Blender's naming scheme. Please list your "
+                                f"desired version as 'v' followed by a digit, "
+                                f"followed by a period, followed by two "
+                                f"digits and either 'a', 'b', 'c' or '-rc' "
+                                f"(versions using '-rc' can optionally add "
+                                f"a number which specifies which release "
+                                f"candidate they want to install) such that "
+                                f"the version looks like the following: "
+                                f"v2.74-rc2")
+
+        else:
+
+            if sys.version_info >= (3, 6):
+
+                # we can get from svn and git master branch
+
+            else:
+
+                # we must find a compatible version
+
         self.announce(f"Cloning Blender source from {BLENDER_GIT_REPO_URL}",
                       level=3)
 
         try:
 
-            blender_git_repo = Repo(blender_dir)
+            blender_git_repo = GitRepo(blender_dir)
 
         except:
 
-            Repo.clone_from(BLENDER_GIT_REPO_URL, blender_dir)
-            blender_git_repo = Repo(blender_dir)
+            GitRepo.clone_from(BLENDER_GIT_REPO_URL, blender_dir)
+            blender_git_repo = GitRepo(blender_dir)
 
         finally:
                 
@@ -320,7 +509,10 @@ class BuildCMakeExt(build_ext):
 
         self.spawn(['cmake', '-H'+blender_dir, '-B'+self.build_temp,
                     '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
-                    '-DWITH_PYTHON_MODULE=ON'] + os_build_args)
+                    '-DWITH_PYTHON_MODULE=ON', 
+                    f"-DPYTHON_VERSION="
+                    f"{sys.version_info[0]}.{sys.version_info[1]}"]
+                    + os_build_args)
         
         self.announce("Building binaries", level=3)
 
@@ -354,7 +546,7 @@ class BuildCMakeExt(build_ext):
         # different place. See comments above for additional information
 
 setup(name='bpy-build',
-      version='1.0.2a0',
+      version='1.0.2a1',
       packages=find_packages(),
       ext_modules=[CMakeExtension(name="bpy")],
       description='A package that builds blender',
@@ -388,8 +580,7 @@ setup(name='bpy-build',
       author_email='gubalatyler@gmail.com',
       license='GPL-3.0',
       python_requires=">=3.4.0",
-      setup_requires=["cmake", "future-fstrings", "GitPython", 
-                      'svn;platform_system=="Windows"'],
+      setup_requires=["cmake", "future-fstrings", "GitPython", 'svn'],
       url="https://github.com/TylerGubala/bpy-build",
       cmdclass={
           'build_ext': BuildCMakeExt,
@@ -397,4 +588,4 @@ setup(name='bpy-build',
           'install_lib': InstallCMakeLibs,
           'install_scripts': InstallBlenderScripts
           }
-    )
+     )

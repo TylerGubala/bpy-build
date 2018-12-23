@@ -1,7 +1,3 @@
-import bpybuild
-
-bpybuild.create_python_module()
-
 try:
 
     import bpy

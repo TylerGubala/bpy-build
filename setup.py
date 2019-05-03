@@ -28,15 +28,17 @@ if sys.version_info < (3,5):
 
     pathlib.Path.home = home_path
 
+BITS = struct.calcsize("P") * 8
+BLENDERPY_DIR = os.path.join(str(pathlib.Path.home()), ".blenderpy")
 PYTHON_EXE_DIR = os.path.dirname(sys.executable)
 
-BLENDERPY_DIR = os.path.join(str(pathlib.Path.home()), ".blenderpy")
-BLENDER_DESIRED_VERSION = None
+# Change the Blender desired API version variable to build different versions
+# of the Blender API. For instance, 'v2.79b' is the same version of the API
+# as you would get when opening the Blender application at v2.79b
+BLENDER_DESIRED_API_VERSION = None
+
 BLENDER_VERSION_PATTERN = r'v(\d\.\d\d)(a|b|c|\-rc\d*)'
 BLENDER_VERSION_REGEX = re.compile(BLENDER_VERSION_PATTERN)
-BLENDER_VERSION_MASTER = 'master'
-
-BITS = struct.calcsize("P") * 8
 
 class BlenderVersion():
     """
@@ -60,7 +62,7 @@ class BlenderVersion():
 
             self.match = BLENDER_VERSION_REGEX.match(version)
 
-            if self.match:
+            if self.match is not None:
 
                 matching_git_tags = [tag for tag in GitRepo(Blender.GIT_BASE_URL).tags 
                                      if tag == self.match.group(0)]
@@ -69,7 +71,7 @@ class BlenderVersion():
 
                 if self.git_repo:
 
-                    pass
+                    pass # Did we actually get it?
 
                 else:
 
@@ -95,8 +97,6 @@ class BlenderVersion():
         """
 
         results = []
-
-        for
 
         return results
 
@@ -148,8 +148,8 @@ class BlenderpyInstall(install):
         self.version = None
 
     def run(self):
-        global BLENDER_DESIRED_VERSION
-        BLENDER_DESIRED_VERSION = self.version
+        # Find a way to pass the Blender Desired version into the distribution
+        # object
         super().run()
 
 class InstallCMakeLibsData(install_data):
@@ -411,73 +411,6 @@ class BuildCMakeExt(build_ext):
         git_repo = GitRepo(GIT_BASE_URL)
         svn_repo = SvnRepo(SVN_BASE_URL)
 
-        if BLENDER_DESIRED_VERSION:
-
-            match = BLENDER_VERSION_REGEX.match(BLENDER_DESIRED_VERSION)
-
-            if match:
-
-                # We have a blender version that conforms to the naming scheme
-                # now to see if it actually exists in git and svn
-
-                if match.group(0) in git_repo.tags:
-
-                    # The version was tagged in the git repository
-                    # now, format the version to match the svn versioning 
-                    # scheme...
-
-                    svn_version_tag = (f"blender-{match.group(1)}"
-                                       f"{match.group(2) if not match.group(2).startswith("-rc")}-release")
-
-                    svn_tag_repo = SvnRepo(os.path.join(SVN_BASE_URL, SVN_TAGS))
-
-                    if svn_version_tag in svn_tag_repo.list():
-
-                        # The version was released in svn and we found it
-                        # Now, is it compatible with our OS and python version?
-
-                    else:
-
-                        raise Exception(f"{BLENDER_DESIRED_VERSION} was found "
-                                        f"in the git repository but not the "
-                                        f"svn repository.")
-
-                else:
-
-                    raise Exception(f"The provided version "
-                                    f"{BLENDER_DESIRED_VERSION} does not "
-                                    f"exist; please check "
-                                    f"https://git.blender.org/gitweb/"
-                                    f"gitweb.cgi/blender.git/tags for a list "
-                                    f"of valid Blender releases")
-
-            else:
-
-                # The blender version did not conform to the naming scheme
-                # fail and notify the user how to list the version
-
-                raise Exception(f"The provided version "
-                                f"{BLENDER_DESIRED_VERSION} did not match "
-                                f"Blender's naming scheme. Please list your "
-                                f"desired version as 'v' followed by a digit, "
-                                f"followed by a period, followed by two "
-                                f"digits and either 'a', 'b', 'c' or '-rc' "
-                                f"(versions using '-rc' can optionally add "
-                                f"a number which specifies which release "
-                                f"candidate they want to install) such that "
-                                f"the version looks like the following: "
-                                f"v2.74-rc2")
-
-        else:
-
-            if sys.version_info >= (3, 6):
-
-                # we can get from svn and git master branch
-
-            else:
-
-                # we must find a compatible version
-
         self.announce(f"Cloning Blender source from {BLENDER_GIT_REPO_URL}",
                       level=3)
 
@@ -557,7 +490,7 @@ setup(name='bpy-build',
                    "Environment :: Win32 (MS Windows)",
                    "Intended Audience :: Developers",
                    "License :: OSI Approved :: "
-                   "GNU Lesser General Public License v3 (LGPLv3)",
+                   "GNU General Public License v3 (GPLv3)",
                    "Natural Language :: English",
                    "Operating System :: Microsoft :: Windows :: Windows 10",
                    "Programming Language :: C",

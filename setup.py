@@ -40,90 +40,6 @@ BLENDER_DESIRED_API_VERSION = None
 BLENDER_VERSION_PATTERN = r'v(\d\.\d\d)(a|b|c|\-rc\d*)'
 BLENDER_VERSION_REGEX = re.compile(BLENDER_VERSION_PATTERN)
 
-class BlenderVersion():
-    """
-    Info about a specific version, where the svn libs are located, etc
-    """
-
-    def __init__(self, version: str):
-        from git import Repo as GitRepo
-        from svn.remote import RemoteClient as SvnRepo
-
-        self.git_repo = None
-        self.svn_repo = None
-
-        if version is BLENDER_VERSION_MASTER:
-
-            self.git_repo = GitRepo(Blender.GIT_BASE_URL)
-            self.svn_repo = SvnRepo(os.path.join(Blender.SVN_BASE_URL, 
-                                                 Blender.SVN_MASTER))
-
-        else:
-
-            self.match = BLENDER_VERSION_REGEX.match(version)
-
-            if self.match is not None:
-
-                matching_git_tags = [tag for tag in GitRepo(Blender.GIT_BASE_URL).tags 
-                                     if tag == self.match.group(0)]
-
-                self.git_repo = matching_git_tags[0] if matching_git_tags else None
-
-                if self.git_repo:
-
-                    pass # Did we actually get it?
-
-                else:
-
-                    raise Exception(f"Blender {version} does not exist in git")
-
-                svn_version_tag = (f"blender-{self.match.group(1)}"
-                                   f"{self.match.group(2) if not self.match.group(2).startswith("-rc")}-release")
-
-                blender_svn_tags = os.path.join(Blender.SVN_BASE_URL,
-                                                Blender.SVN_TAGS)
-
-                matching_svn_tags = [os.path.join(blender_svn_tags, tag) for 
-                                     tag in 
-                                     SvnRepo(os.path.join(Blender.SVN_BASE_URL,
-                                             Blender.SVN_TAGS)).list() if 
-                                     tag == svn_version_tag]
-
-                self.svn_repo = SvnRepo(matching_svn_tags[0]) if matching_svn_tags else None
-
-    def variants(self):
-        """
-        The different 'types' of releases this version supports
-        """
-
-        results = []
-
-        return results
-
-class Blender():
-    """
-    Info about Blender, top level that gets the compatible version for us
-    """
-
-    GIT_BASE_URL = 'git://git.blender.org/blender.git'
-
-    SVN_BASE_URL = 'https://svn.blender.org/svnroot/bf-blender'
-    SVN_MASTER = 'trunk'
-    SVN_TAGS = 'tags'
-
-    def __init__(self):
-        from git import Repo as GitRepo
-
-        self.git_repo = GitRepo(self.GIT_BASE_URL)
-
-    @property
-    def versions(self) -> List(BlenderVersion):
-        """
-        The versions associated with Blender
-        """
-
-        return [BlenderVersion(tag) for tag in self.git_repo.tags] + [BlenderVersion(BLENDER_VERSION_MASTER)]
-
 class CMakeExtension(Extension):
     """
     An extension to run the cmake build
@@ -132,25 +48,6 @@ class CMakeExtension(Extension):
     def __init__(self, name, sources=[]):
 
         super().__init__(name = name, sources = sources)
-
-class BlenderpyInstall(install):
-    """
-    We use this class solely to set the Blender desired version parameter
-    """
-
-    user_options = install.user_options + [
-        ("version", None, "The desired Blender version to be installed "
-                          "(ie: v2.74-rc2)")
-    ]
-
-    def initialize_options(self):
-        super().initialize_options()
-        self.version = None
-
-    def run(self):
-        # Find a way to pass the Blender Desired version into the distribution
-        # object
-        super().run()
 
 class InstallCMakeLibsData(install_data):
     """

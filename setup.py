@@ -7,6 +7,8 @@ Build blender into a python module
 from distutils.command.install_data import install_data
 import os
 import pathlib
+import pkg_resources
+import platform
 import re
 from setuptools import find_packages, setup, Extension
 from setuptools.command.build_ext import build_ext
@@ -28,17 +30,13 @@ if sys.version_info < (3,5):
 
     pathlib.Path.home = home_path
 
-BITS = struct.calcsize("P") * 8
-BLENDERPY_DIR = os.path.join(str(pathlib.Path.home()), ".blenderpy")
 PYTHON_EXE_DIR = os.path.dirname(sys.executable)
 
 # Change the Blender desired API version variable to build different versions
 # of the Blender API. For instance, 'v2.79b' is the same version of the API
 # as you would get when opening the Blender application at v2.79b
-BLENDER_DESIRED_API_VERSION = None
-
-BLENDER_VERSION_PATTERN = r'v(\d\.\d\d)(a|b|c|\-rc\d*)'
-BLENDER_VERSION_REGEX = re.compile(BLENDER_VERSION_PATTERN)
+VERSION = "2.82"
+VERSION_TUPLE = pkg_resources.parse_version(VERSION)
 
 class CMakeExtension(Extension):
     """
@@ -191,170 +189,71 @@ class BuildCMakeExt(build_ext):
         """
         The steps required to build the extension
         """
+        # Import bpy-make here because otherwise the script will 
+        # fail before bpy-make is retrieved
 
-        # We import the setup_requires modules here because if we import them
-        # at the top this script will always fail as they won't be present
-
-        from git import Repo as GitRepo
-        from svn.remote import RemoteClient as SvnRepo
+        import bpymake.sources
+        import bpymake.make
 
         self.announce("Preparing the build environment", level=3)
 
-        blender_dir = os.path.join(BLENDERPY_DIR, "blender")
-
-        build_dir = pathlib.Path(self.build_temp)
-
+        setup_root_path = pathlib.Path(self.build_temp)
+        blender_path = pathlib.Path(os.path.join(self.build_temp, "blender"))
+        # lib_path = pathlib.Path(os.path.join(self.build_temp, "lib"))
+        build_path = pathlib.Path(os.path.join(self.build_temp, "build"))
         extension_path = pathlib.Path(self.get_ext_fullpath(extension.name))
 
-        os.makedirs(blender_dir, exist_ok=True)
-        os.makedirs(str(build_dir), exist_ok=True)
+        os.makedirs(str(blender_path), exist_ok=True)
+        os.makedirs(str(build_path), exist_ok=True)
+        # os.makedirs(str(lib_path), exist_ok=True)
         os.makedirs(str(extension_path.parent.absolute()), exist_ok=True)
 
-        # Now that the necessary directories are created, ensure that OS 
-        # specific steps are performed; a good example is checking on linux 
-        # that the required build libraries are in place.
+        self.announce("Finding compatible Blender online; "
+                      "this will take a while...", level=3)
 
-        os_build_args = []
+        compatible_bpy = bpymake.sources.get_compatible_sources()
 
-        # Have to find the correct release tag to checkout here, as potentially
-        # master may not be the correct one for this Python version. We use svn
-        # to find whether or not master, or a specific tag supports the 
-        # current python version
+        if not VERSION_TUPLE in compatible_bpy:
 
-        if sys.platform == "win32": # Windows only steps
+            raise Exception(f"{VERSION} bpy is not compatible with "
+                            f"{platform.system()} Python {sys.version} "
+                            f"{bpymake.BITNESS}bit")
 
-            import winreg
+        git_repo = compatible_bpy[VERSION_TUPLE][0][0]
+        svn_repo = compatible_bpy[VERSION_TUPLE][1][0]
+        # When using compatible_sources you always get a git and svn repo object
 
-            vs_versions = []
+        self.announce(f"Cloning Blender source from git", level=3)
 
-            for version in [12, 14, 15]:
+        git_repo.checkout(blender_path) # Clones into 'blender'
 
-                try:
+        self.announce(f"Cloning precompiled libs from svn", level=3)
 
-                    winreg.OpenKey(winreg.HKEY_CLASSES_ROOT,
-                                   f"VisualStudio.DTE.{version}.0")
+        svn_repo.checkout(setup_root_path) # Checkout into 'lib' (automatic)
 
-                except:
+        self.announce(" Configuring cmake project "
+                      "and building binaries", level=3)
 
-                    pass
-                    
-                else:
+        for command in bpymake.make.get_make_commands(source_location= blender_path,
+                                                      build_location= build_path):
 
-                    vs_versions.append(version)
-
-            if not vs_versions:
-
-                raise Exception("Windows users must have Visual Studio 2013 "
-                                "or later installed")
-
-            if max(vs_versions) == 15:
-
-                os_build_args += ["-G", f"Visual Studio 15 2017"
-                                        f"{' Win64' if BITS == 64 else ''}"]
-
-            elif max(vs_versions) == 14:
-
-                os_build_args += ["-G", f"Visual Studio 14 2015"
-                                        f"{' Win64' if BITS == 64 else ''}"]
-
-            elif max(vs_versions) == 12:
-
-                os_build_args += ["-G", f"Visual Studio 12 2013"
-                                        f"{' Win64' if BITS == 64 else ''}"]
-
-            # TODO: Clean up here
-
-            svn_lib_options += [f"win{64 if BITS == 64 else 'dows'}_vc{version}" 
-                                for version in vs_versions]
-
-            blender_svn_repo = SvnRepo(svn_url)
-
-            os.makedirs(svn_dir, exist_ok=True)
-
-            self.announce(f"Checking out svn libs from {svn_url}", level=3)
-
-            try:
-                
-                blender_svn_repo.checkout(svn_dir)
-
-            except Exception as e:
-
-                self.warn("Windows users must have the svn executable "
-                          "available from the command line")
-                self.warn("Please install Tortoise SVN with \"command line "
-                          "client tools\" as described here")
-                self.warn("https://stackoverflow.com/questions/1625406/using-"
-                          "tortoisesvn-via-the-command-line")
-                raise e
-
-        elif sys.platform == "linux": # Linux only steps
-
-            # TODO: Test linux environment, issue #1
-
-            pass
-
-        elif sys.platform == "darwin": # MacOS only steps
-
-            # TODO: Test MacOS environment, issue #2
-
-            pass
-
-        # Perform relatively common build steps
-
-        # TODO: if blender desired version, then see if we can install that
-        # Otherwise fail, if no desired version, find the latest version that
-        # supports our python and install that
-
-        git_repo = GitRepo(GIT_BASE_URL)
-        svn_repo = SvnRepo(SVN_BASE_URL)
-
-        self.announce(f"Cloning Blender source from {BLENDER_GIT_REPO_URL}",
-                      level=3)
-
-        try:
-
-            blender_git_repo = GitRepo(blender_dir)
-
-        except:
-
-            GitRepo.clone_from(BLENDER_GIT_REPO_URL, blender_dir)
-            blender_git_repo = GitRepo(blender_dir)
-
-        finally:
-                
-            blender_git_repo.heads.master.checkout()
-            blender_git_repo.remotes.origin.pull()
-
-        self.announce(f"Updating Blender git submodules", level=3)
-
-        blender_git_repo.git.submodule('update', '--init', '--recursive')
-
-        for submodule in blender_git_repo.submodules:
-                
-            submodule_repo = submodule.module()
-            submodule_repo.heads.master.checkout()
-            submodule_repo.remotes.origin.pull()
-
-        self.announce("Configuring cmake project", level=3)
-
-        self.spawn(['cmake', '-H'+blender_dir, '-B'+self.build_temp,
-                    '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
-                    '-DWITH_PYTHON_MODULE=ON', 
-                    f"-DPYTHON_VERSION="
-                    f"{sys.version_info[0]}.{sys.version_info[1]}"]
-                    + os_build_args)
-        
-        self.announce("Building binaries", level=3)
-
-        self.spawn(["cmake", "--build", self.build_temp, "--target", "INSTALL",
-                    "--config", "Release"])
+            self.spawn(command)
 
         # Build finished, now copy the files into the copy directory
         # The copy directory is the parent directory of the extension (.pyd)
 
         self.announce("Moving Blender python module", level=3)
 
-        bin_dir = os.path.join(str(build_dir), 'bin', 'Release')
+        bin_dir = None
+
+        if platform.system() == "Windows":
+
+            bin_dir = os.path.join(str(build_path), 'bin', 'Release')
+
+        else:
+
+            bin_dir = os.path.join(str(build_path), 'bin')
+            
         self.distribution.bin_dir = bin_dir
 
         bpy_path = [os.path.join(bin_dir, _bpy) for _bpy in
@@ -376,7 +275,7 @@ class BuildCMakeExt(build_ext):
         # different place. See comments above for additional information
 
 setup(name='bpy-build',
-      version='1.0.2a1',
+      version=VERSION,
       packages=find_packages(),
       ext_modules=[CMakeExtension(name="bpy")],
       description='A package that builds blender',
@@ -410,7 +309,7 @@ setup(name='bpy-build',
       author_email='gubalatyler@gmail.com',
       license='GPL-3.0',
       python_requires=">=3.4.0",
-      setup_requires=["cmake", "future-fstrings", "GitPython", 'svn'],
+      setup_requires=["bpy-make", "future-fstrings"],
       url="https://github.com/TylerGubala/bpy-build",
       cmdclass={
           'build_ext': BuildCMakeExt,

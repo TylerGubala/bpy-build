@@ -30,7 +30,10 @@ except ImportError:
     LOGGER.info("Package `distro` not available")
 
 def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
-                           bitness: Optional[int] = None) -> List[List[str]]:
+                           bitness: Optional[int] = None,
+                           with_cuda: Optional[bool]=False, 
+                           with_optix: Optional[bool] = False,
+                           optix_sdk_path: Optional[str] = None) -> List[List[str]]:
 
     commands = []
 
@@ -100,7 +103,13 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
     commands.append(['cmake', '-H' + str(source.absolute()), 
                     '-B' + str(destination.absolute()),
                     '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
-                    '-DWITH_PYTHON_MODULE=ON', f"-DPYTHON_VERSION={sys.version_info[0]}.{sys.version_info[1]}"] + os_configure_args)
+                    '-DWITH_PYTHON_MODULE=ON', 
+                    f"-DPYTHON_VERSION={sys.version_info[0]}."
+                    f"{sys.version_info[1]}", 
+                    "-DWITH_CYCLES_CUDA_BINARIES=ON" if with_cuda else "",
+                    "-DWITH_CYCLES_DEVICE_OPTIX=ON" if with_optix else "",
+                    f"-DOPTIX_ROOT_DIR={optix_sdk_path}" if 
+                    optix_sdk_path is not None else ""] + os_configure_args)
 
     return commands
 
@@ -126,10 +135,15 @@ def get_build_commands(location: pathlib.Path,
     return commands
 
 def get_make_commands(source_location: pathlib.Path, 
-         build_location: Optional[pathlib.Path] = None, 
-         is_release: Optional[bool] = True) -> List[List[str]]:
+                      build_location: Optional[pathlib.Path] = None,
+                      bitness: Optional[int] = BITNESS,
+                      is_release: Optional[bool] = True,
+                      with_cuda: Optional[bool]=False, 
+                      with_optix: Optional[bool] = False,
+                      optix_sdk_path: Optional[str] = None) -> List[List[str]]:
 
     build_location = build_location if build_location else source_location
 
-    return get_configure_commands(source_location, build_location) +\
+    return get_configure_commands(source_location, build_location, bitness, 
+                                  with_cuda, with_optix, optix_sdk_path) +\
     get_build_commands(build_location, is_release)

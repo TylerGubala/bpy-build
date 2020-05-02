@@ -100,7 +100,7 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
         commands.append(["make", "-C", str(source.absolute()), "update"])
 
-    commands.append(['cmake', '-H' + str(source.absolute()), 
+    commands.append(['cmake', '-S' + str(source.absolute()), 
                     '-B' + str(destination.absolute()),
                     '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
                     '-DWITH_PYTHON_MODULE=ON', 

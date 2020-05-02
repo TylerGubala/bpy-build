@@ -24,7 +24,7 @@ from svn.exception import SvnException
 from svn.remote import RemoteClient as SvnRepo
 
 # Relative imports
-from bpymake import BITNESS, BLENDERPY_DIR
+from bpybuild import BITNESS
 
 LOGGER = logging.getLogger(__name__)
 
@@ -162,7 +162,6 @@ class BlenderGit(SourceVersionControl):
     """
 
     BASE_URL = "git://git.blender.org/blender.git"
-    BASE_REPO_DIR = os.path.join(BLENDERPY_DIR, "blender")
 
     # Here I store the Blender `git` sources in a folder in the home directory
     # so that I don't need to waste time constantly pulling from the repository;

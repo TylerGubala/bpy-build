@@ -19,7 +19,7 @@ import cmake
 import cmakegenerators
 
 # Relative imports
-from bpymake import BITNESS
+from bpybuild import BITNESS
 
 LOGGER = logging.getLogger(__name__)
 

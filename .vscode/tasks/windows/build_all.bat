@@ -1,3 +1,6 @@
+del /F /s /q build\*.*
+rmdir /s /q build
+del /s /q dist\*.*
 .\venv\3.4-32\Scripts\python setup.py bdist_wheel > logs\3.4-32_build.log 2>&1
 .\venv\3.4-64\Scripts\python setup.py bdist_wheel > logs\3.4-64_build.log 2>&1
 .\venv\3.5-32\Scripts\python setup.py bdist_wheel > logs\3.5-32_build.log 2>&1

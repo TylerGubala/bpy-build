@@ -112,9 +112,9 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
                      "-DWITH_CYCLES_CUDA_BINARIES=ON" if with_cuda else "",
                      "-DWITH_CYCLES_DEVICE_OPTIX=ON" if with_optix else "",
                      f"-DOPTIX_ROOT_DIR={optix_sdk_path}" if 
-                     optix_sdk_path is not None else ""] + os_configure_args, 
-                     '-S' + str(source.absolute()), 
-                     '-B' + str(destination.absolute()))
+                     optix_sdk_path is not None else ""] + os_configure_args + 
+                    ['-S' + str(source.absolute()), 
+                     '-B' + str(destination.absolute())])
 
     return commands
 

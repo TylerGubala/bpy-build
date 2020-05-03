@@ -100,18 +100,21 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
         commands.append(["make", "-C", str(source.absolute()), "update"])
 
-    commands.append(['cmake', 
-                     ('-H' if 
-                      platform.system() != "Linux" else "") + str(source.absolute()), 
-                    '-B' + str(destination.absolute()),
-                    '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
-                    '-DWITH_PYTHON_MODULE=ON', 
-                    f"-DPYTHON_VERSION={sys.version_info[0]}."
-                    f"{sys.version_info[1]}", 
-                    "-DWITH_CYCLES_CUDA_BINARIES=ON" if with_cuda else "",
-                    "-DWITH_CYCLES_DEVICE_OPTIX=ON" if with_optix else "",
-                    f"-DOPTIX_ROOT_DIR={optix_sdk_path}" if 
-                    optix_sdk_path is not None else ""] + os_configure_args)
+    if platform.system() == "Linux":
+
+        pass
+
+    commands.append(['cmake',
+                     '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
+                     '-DWITH_PYTHON_MODULE=ON', 
+                     f"-DPYTHON_VERSION={sys.version_info[0]}."
+                     f"{sys.version_info[1]}", 
+                     "-DWITH_CYCLES_CUDA_BINARIES=ON" if with_cuda else "",
+                     "-DWITH_CYCLES_DEVICE_OPTIX=ON" if with_optix else "",
+                     f"-DOPTIX_ROOT_DIR={optix_sdk_path}" if 
+                     optix_sdk_path is not None else ""] + os_configure_args, 
+                     '-S' + str(source.absolute()), 
+                     '-B' + str(destination.absolute()))
 
     return commands
 

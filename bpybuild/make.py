@@ -61,7 +61,7 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
             if BITNESS == 64:
 
-                filtered_generator_options = [option for option in filtered_generators[0].options if "64".casefold() in option.casefold()]
+                filtered_generator_options = [option for generator in filtered_generators for option in generator.options if "64".casefold() in option.casefold()]
 
                 if len(filtered_generator_options) > 0:
 
@@ -69,10 +69,7 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
                 else:
 
-                    raise Exception(f"{BITNESS}bit Visual Studio not found, "
-                                    f"but Visual Studio is installed. Make "
-                                    f"sure you have the correct compilers for "
-                                    f"your Python platform ({BITNESS}bit)")
+                    generator_option = filtered_generators[0].options[0]
 
             else:
 

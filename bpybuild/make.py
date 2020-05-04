@@ -102,7 +102,9 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
     if platform.system() == "Linux":
 
-        pass
+        commands.append([os.path.join(str(source.absolute()), 
+                         "build_files", "build_environment", 
+                         "install_deps.sh")])
 
     commands.append(['cmake',
                      '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',

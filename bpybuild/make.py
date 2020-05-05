@@ -43,6 +43,8 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
     if platform.system() == "Windows":
 
+        os_configure_args += ["-DWITH_WINDOWS_BUNDLE_CRT=OFF"]
+
         generators = [generator for generator in 
                       cmakegenerators.get_generators() if 
                       generator.name.startswith("Visual Studio")]

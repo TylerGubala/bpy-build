@@ -59,7 +59,7 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
         if len(filtered_generators) > 0:
 
-            generator_option : str = None
+            generator_option = None
 
             if BITNESS == 64:
 

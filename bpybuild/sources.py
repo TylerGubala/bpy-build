@@ -86,17 +86,17 @@ class SvnOSPlatform():
 
     def __init__(self, svn_url: str):
 
-        self.url : str = svn_url
+        self.url = svn_url
 
-        self.repo : SvnRepo = SvnRepo(svn_url)
+        self.repo = SvnRepo(svn_url)
 
-        self.svn_name : str = posixpath.basename(svn_url)
+        self.svn_name = posixpath.basename(svn_url)
 
-        self.os_name: str = None
-        self.os_version : Tuple[int] = None
-        self.processor: str = None
-        self.bitness: int = None
-        self.build_environment: str = None
+        self.os_name = None
+        self.os_version = None
+        self.processor = None
+        self.bitness = None
+        self.build_environment = None
 
         if self.svn_name.casefold().startswith("android".casefold()):
 
@@ -246,9 +246,9 @@ class BlenderSvn(SourceVersionControl):
                                                    .replace("-winfix", "")
                                                    .replace("-", "."))
 
-        self._platforms : List[SvnOSPlatform] = None
+        self._platforms = None
 
-        self._platforms_dict : Dict[str, List[Tuple[int, int]]] = None
+        self._platforms_dict = None
 
     @classmethod
     def tags(cls) -> List[str]:

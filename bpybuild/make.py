@@ -17,6 +17,7 @@ from typing import Dict, List, Optional, Tuple
 # PYPI imports
 import cmake
 import cmakegenerators
+import distro
 
 # Relative imports
 from bpybuild import BITNESS
@@ -90,6 +91,12 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
     elif platform.system() == "Linux":
 
         os_configure_args += ["-DWITH_AUDASPACE=OFF"]
+
+        if distro.linux_distribution()[0].casefold() in ["debian", "raspbian"]:
+
+            # JEMALLOC breaks the import on debian-based linux distributions
+
+            os_configure_args += ["-DWITH_MEM_JEMALLOC=OFF"]
 
     elif platform.system() == "Darwin":
 

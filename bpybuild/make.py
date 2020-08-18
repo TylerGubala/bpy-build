@@ -106,7 +106,8 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
         commands.append(["make", "-C", str(source.absolute()), "update"])
 
-    if platform.system() == "Linux"and distro.linux_distribution()[0].casefold() != "centos":
+    if platform.system() == "Linux" and not \
+        distro.linux_distribution()[0].casefold().startswith("centos"):
 
         commands.append([os.path.join(str(source.absolute()), 
                          "build_files", "build_environment", 

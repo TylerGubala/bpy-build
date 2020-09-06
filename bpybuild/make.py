@@ -90,13 +90,9 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
     elif platform.system() == "Linux":
 
-        os_configure_args += ["-DWITH_AUDASPACE=OFF"]
-
-        if distro.linux_distribution()[0].casefold() in ["debian", "raspbian"]:
-
-            # JEMALLOC breaks the import on debian-based linux distributions
-
-            os_configure_args += ["-DWITH_MEM_JEMALLOC=OFF"]
+        # custom allocators break bpy builds
+        # should allow the host to use whatever allocation method is necessary
+        os_configure_args += ["-DWITH_MEM_JEMALLOC=OFF"]
 
     elif platform.system() == "Darwin":
 

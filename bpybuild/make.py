@@ -98,17 +98,6 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
         os_configure_args += ["-DWITH_OPENMP=OFF", "-DWITH_AUDASPACE=OFF"]
 
-    if platform.system() != "Windows":
-
-        commands.append(["make", "-C", str(source.absolute()), "update"])
-
-    if platform.system() == "Linux" and not \
-        distro.linux_distribution()[0].casefold().startswith("centos"):
-
-        commands.append([os.path.join(str(source.absolute()), 
-                         "build_files", "build_environment", 
-                         "install_deps.sh")])
-
     commands.append(['cmake',
                      '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
                      '-DWITH_PYTHON_MODULE=ON', 

@@ -86,13 +86,7 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
         else:
 
-            raise Exception(f"Visual Studio not found")        
-
-    elif platform.system() == "Linux":
-
-        # custom allocators break bpy builds
-        # should allow the host to use whatever allocation method is necessary
-        os_configure_args += ["-DWITH_MEM_JEMALLOC=OFF"]
+            raise Exception(f"Visual Studio not found")
 
     elif platform.system() == "Darwin":
 
@@ -100,7 +94,8 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
     commands.append(['cmake',
                      '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
-                     '-DWITH_PYTHON_MODULE=ON', 
+                     '-DWITH_PYTHON_MODULE=ON', "-DWITH_MEM_JEMALLOC=OFF",
+                     "-DWITH_OPENMP_STATIC=OFF",
                      f"-DPYTHON_VERSION={sys.version_info[0]}."
                      f"{sys.version_info[1]}", 
                      "-DWITH_CYCLES_CUDA_BINARIES=ON" if with_cuda else "",

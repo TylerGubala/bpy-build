@@ -1,5 +1,5 @@
 #! /usr/bin/python
-# -*- coding: future_fstrings -*-
+# -*- coding: utf-8 -*-
 """
 Make Blender python modules binaries
 """
@@ -64,7 +64,10 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
             if BITNESS == 64:
 
-                filtered_generator_options = [option for generator in filtered_generators for option in generator.options if "64".casefold() in option.casefold()]
+                filtered_generator_options = [option for generator in 
+                                              filtered_generators for option in
+                                              generator.options if 
+                                              "64".casefold() in option.casefold()]
 
                 if len(filtered_generator_options) > 0:
 

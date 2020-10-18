@@ -1,5 +1,5 @@
 #! /usr/bin/python
-# -*- coding: future_fstrings -*-
+# -*- coding: utf-8 -*-
 """
 Setup for build scripting
 """
@@ -7,7 +7,7 @@ Setup for build scripting
 from setuptools import find_packages, setup
 
 setup(name='bpy-build',
-      version='1.6.1',
+      version='1.6.2',
       packages=find_packages(),
       description='Find Blender sources in version control, create build scripts',
       long_description=open("./README.md", 'r').read(),
@@ -42,6 +42,5 @@ setup(name='bpy-build',
       python_requires=">=3.4.0",
       install_requires=["cmake>=3.13.5", "cmake-generators", "GitPython", "svn",
                         "distro"],
-      setup_requires=["future-fstrings"],
       url="https://github.com/TylerGubala/bpy-build"
      )

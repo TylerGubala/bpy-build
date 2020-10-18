@@ -1,5 +1,5 @@
 #! /usr/bin/python
-# -*- coding: future_fstrings -*-
+# -*- coding: utf-8 -*-
 """Functions for searching for and retrieving Blender sources and libs
 """
 

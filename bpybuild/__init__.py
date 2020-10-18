@@ -1,5 +1,5 @@
 #! /usr/bin/python
-# -*- coding: future_fstrings -*-
+# -*- coding: utf-8 -*-
 """A module for building Blender
 
 This module is mostly meant as an automation tool for building Blender and 

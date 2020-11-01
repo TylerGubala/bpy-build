@@ -15,26 +15,16 @@ import typing
 from typing import Dict, List, Optional, Tuple
 
 # PYPI imports
-import cmake
 import cmakegenerators
-import distro
 
 # Relative imports
 from bpybuild import BITNESS
 
 LOGGER = logging.getLogger(__name__)
 
-# Platform-specific PYPI imports
-try:
-    import distro
-except ImportError:
-    LOGGER.info("Package `distro` not available")
-
 def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
                            bitness: Optional[int] = None,
-                           with_cuda: Optional[bool]=False, 
-                           with_optix: Optional[bool] = False,
-                           optix_sdk_path: Optional[str] = None) -> List[List[str]]:
+                           cmake_configure_args: Optional[List[str]] = None) -> List[List[str]]:
 
     commands = []
 
@@ -55,14 +45,14 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
             raise Exception("Windows users must have Visual Studio")
 
         filtered_generators = [generator for generator in generators if 
-                                "Visual Studio".casefold() in 
-                                generator.name.casefold()]
+                               "Visual Studio".casefold() in 
+                               generator.name.casefold()]
 
         if len(filtered_generators) > 0:
 
             generator_option = None
 
-            if BITNESS == 64:
+            if bitness == 64:
 
                 filtered_generator_options = [option for generator in 
                                               filtered_generators for option in
@@ -95,16 +85,7 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
         os_configure_args += ["-DWITH_OPENMP=OFF", "-DWITH_AUDASPACE=OFF"]
 
-    commands.append(['cmake',
-                     '-DWITH_PLAYER=OFF', '-DWITH_PYTHON_INSTALL=OFF',
-                     '-DWITH_PYTHON_MODULE=ON', "-DWITH_MEM_JEMALLOC=OFF",
-                     "-DWITH_OPENMP_STATIC=OFF", "-DWITH_STATIC_LIBS=ON",
-                     f"-DPYTHON_VERSION={sys.version_info[0]}."
-                     f"{sys.version_info[1]}", 
-                     "-DWITH_CYCLES_CUDA_BINARIES=ON" if with_cuda else "",
-                     "-DWITH_CYCLES_DEVICE_OPTIX=ON" if with_optix else "",
-                     f"-DOPTIX_ROOT_DIR={optix_sdk_path}" if 
-                     optix_sdk_path is not None else ""] + os_configure_args + 
+    commands.append(['cmake'] + cmake_configure_args + os_configure_args + 
                     ['-S' + str(source.absolute()), 
                      '-B' + str(destination.absolute())])
 
@@ -134,13 +115,11 @@ def get_build_commands(location: pathlib.Path,
 def get_make_commands(source_location: pathlib.Path, 
                       build_location: Optional[pathlib.Path] = None,
                       bitness: Optional[int] = BITNESS,
-                      is_release: Optional[bool] = True,
-                      with_cuda: Optional[bool]=False, 
-                      with_optix: Optional[bool] = False,
-                      optix_sdk_path: Optional[str] = None) -> List[List[str]]:
+                      cmake_configure_args: Optional[List[str]] = None,
+                      is_release: Optional[bool] = True) -> List[List[str]]:
 
     build_location = build_location if build_location else source_location
 
-    return get_configure_commands(source_location, build_location, bitness, 
-                                  with_cuda, with_optix, optix_sdk_path) +\
+    return get_configure_commands(source_location, build_location, 
+                                  bitness, cmake_configure_args) +\
     get_build_commands(build_location, is_release)

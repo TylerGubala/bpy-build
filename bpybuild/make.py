@@ -26,6 +26,9 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
                            bitness: Optional[int] = None,
                            cmake_configure_args: Optional[List[str]] = None) -> List[List[str]]:
 
+    cmake_configure_args = cmake_configure_args if \
+                           cmake_configure_args is not None else []
+
     commands = []
 
     os_configure_args = []
@@ -85,7 +88,7 @@ def get_configure_commands(source: pathlib.Path, destination: pathlib.Path,
 
         os_configure_args += ["-DWITH_OPENMP=OFF", "-DWITH_AUDASPACE=OFF"]
 
-    commands.append(['cmake'] + cmake_configure_args + os_configure_args + 
+    commands.append(['cmake', "-DWITH_PYTHON_INSTALL=OFF", "-DWITH_PYTHON_MODULE=ON"] + cmake_configure_args + os_configure_args + 
                     ['-S' + str(source.absolute()), 
                      '-B' + str(destination.absolute())])
 
@@ -122,4 +125,4 @@ def get_make_commands(source_location: pathlib.Path,
 
     return get_configure_commands(source_location, build_location, 
                                   bitness, cmake_configure_args) +\
-    get_build_commands(build_location, is_release)
+           get_build_commands(build_location, is_release)
